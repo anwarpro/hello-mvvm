@@ -1,5 +1,6 @@
 package com.helloanwar.hellomvvm
 
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,20 +16,28 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.palette.graphics.Palette
+import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
+import coil.request.SuccessResult
+import coil.transform.RoundedCornersTransformation
 import com.helloanwar.hellomvvm.data.PhotoRepository
 import com.helloanwar.hellomvvm.data.model.PhotoResponse
 import com.helloanwar.hellomvvm.data.model.PhotoResponseItem
 import com.helloanwar.hellomvvm.data.source.remote.PhotoRemoteSource
 import com.helloanwar.hellomvvm.ui.theme.HelloMVVMTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -89,6 +98,7 @@ private fun PhotoGridList(photos: PhotoResponse? = PhotoResponse.demo()) {
     }
 }
 
+@ExperimentalCoilApi
 @Composable
 private fun PhotoGridItem(photo: PhotoResponseItem) {
     Column(
@@ -97,23 +107,49 @@ private fun PhotoGridItem(photo: PhotoResponseItem) {
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        var cardBackColor by remember { mutableStateOf(Color.LightGray) }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(100.dp)
-                .background(Color.LightGray, RoundedCornerShape(6.dp)),
+                .background(cardBackColor, RoundedCornerShape(6.dp)),
             contentAlignment = Alignment.Center
         ) {
+
+            val context = LocalContext.current
+
+            val imageLoader = ImageLoader(context)
+
+            val request = ImageRequest.Builder(context)
+                .transformations(RoundedCornersTransformation(6.dp.value))
+                .data(photo.thumbnailUrl)
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .build()
+
+            val imagePainter = rememberImagePainter(
+                request = request,
+                imageLoader = imageLoader
+            )
+
+            LaunchedEffect(key1 = imagePainter) {
+                launch {
+                    val result = (imageLoader.execute(request) as SuccessResult).drawable
+                    val bitmap = (result as BitmapDrawable).bitmap
+                    val vibrant = Palette.from(bitmap)
+                        .generate()
+                        .getDominantColor(Color.LightGray.toArgb())
+                    cardBackColor = Color(vibrant).copy(alpha = 0.15f)
+                }
+            }
+
             Image(
-                painter = rememberImagePainter(
-                    photo.thumbnailUrl,
-                    builder = {
-                        placeholder(R.mipmap.ic_launcher_round)
-                        error(R.mipmap.ic_launcher_round)
-                    }),
+                painter = imagePainter,
                 contentDescription = "photo",
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(8.dp)
             )
         }
