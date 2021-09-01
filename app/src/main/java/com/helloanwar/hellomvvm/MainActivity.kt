@@ -35,6 +35,7 @@ import coil.transform.RoundedCornersTransformation
 import com.helloanwar.hellomvvm.data.PhotoRepository
 import com.helloanwar.hellomvvm.data.model.PhotoResponse
 import com.helloanwar.hellomvvm.data.model.PhotoResponseItem
+import com.helloanwar.hellomvvm.data.source.local.PhotoLocalSource
 import com.helloanwar.hellomvvm.data.source.remote.PhotoRemoteSource
 import com.helloanwar.hellomvvm.ui.theme.HelloMVVMTheme
 import kotlinx.coroutines.launch
@@ -45,7 +46,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val viewModel = MainViewModel(PhotoRepository(PhotoRemoteSource))
+        val viewModel = MainViewModel(
+            PhotoRepository(
+                localSource = PhotoLocalSource((application as App).database),
+                PhotoRemoteSource
+            ),
+            application
+        )
 
         setContent {
             HelloMVVMTheme {
@@ -165,7 +172,7 @@ private fun PhotoGridItem(photo: PhotoResponseItem) {
 @Composable
 fun DefaultPreview() {
 
-    val viewModel = MainViewModel(PhotoRepository(PhotoRemoteSource))
+    val viewModel = MainViewModel(PhotoRepository(PhotoLocalSource(), PhotoRemoteSource))
 
     HelloMVVMTheme {
         PhotoGallery(viewModel)

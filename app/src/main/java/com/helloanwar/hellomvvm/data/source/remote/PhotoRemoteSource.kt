@@ -1,12 +1,13 @@
 package com.helloanwar.hellomvvm.data.source.remote
 
 import com.helloanwar.hellomvvm.data.model.PhotoResponse
-import retrofit2.Response
+import com.helloanwar.hellomvvm.data.model.PhotoResponseItem
+import com.helloanwar.hellomvvm.data.source.PhotoSource
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 
-object PhotoRemoteSource {
+object PhotoRemoteSource : PhotoSource {
     const val BASE_URL = "https://jsonplaceholder.typicode.com/"
 
     var retrofit = Retrofit.Builder()
@@ -14,8 +15,12 @@ object PhotoRemoteSource {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    suspend fun getPhotos(): Response<PhotoResponse> {
+    override suspend fun getPhotos(): PhotoResponse? {
         val service = retrofit.create(PhotoService::class.java)
-        return service.getPhotos()
+        return service.getPhotos().body()
+    }
+
+    override suspend fun save(photoResponseItem: PhotoResponseItem): Boolean {
+        TODO("Not yet implemented")
     }
 }
